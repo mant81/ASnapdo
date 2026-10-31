@@ -37,8 +37,9 @@ try {
     $asset = Invoke-RestMethod -Uri $upload -Method Post -Headers $headers -ContentType 'application/octet-stream' -InFile $installer
     if ($asset.size -ne (Get-Item -LiteralPath $installer).Length -or $asset.state -ne 'uploaded') { throw 'Installer upload verification failed; release remains a draft.' }
     $published = Invoke-RestMethod -Uri "$api/releases/$($release.id)" -Method Patch -Headers $headers -ContentType 'application/json' -Body '{"draft":false}'
+    $publishedAsset = $published.assets | Where-Object { $_.id -eq $asset.id } | Select-Object -First 1
     Write-Output "Release: $($published.html_url)"
-    Write-Output "Installer: $($asset.browser_download_url)"
+    Write-Output "Installer: $($publishedAsset.browser_download_url)"
     Write-Output "SHA-256: $hash"
 } finally {
     $token = $null; $headers = $null
