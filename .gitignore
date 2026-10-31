@@ -1,0 +1,7 @@
+**/bin/
+**/obj/
+release/
+*.user
+tools/vendor/
+site-staging/
+docs/screenshots/
