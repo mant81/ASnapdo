@@ -5,3 +5,11 @@ release/
 tools/vendor/
 site-staging/
 docs/screenshots/
+
+# Signing credentials and local secrets
+*.pfx
+*.p12
+*.key
+.env
+.env.*
+!.env.example

@@ -1,4 +1,4 @@
-﻿# 검증 기록 — 2026-10-30
+# 검증 기록 — 2026-10-30
 
 ## 초기 상태와 구현
 
@@ -157,3 +157,16 @@ Windows x64 / SDK 10.0.403 / 120 DPI(125%)에서 실행:
 - 실행 화면(합성 캡처를 편집하는 실제 WinForms UI): `docs/screenshots/asnapdo-gallery.png`, `docs/screenshots/asnapdo-blur-preview.png`. 125% DPI에서 확인. 150%/200% 및 실제 다중 모니터 실기 검증은 미실시.
 - `powershell -NoProfile -ExecutionPolicy Bypass -File build-installer.ps1`: 성공. `release/setup/ASnapdo-Setup.exe` 갱신. 게시 시 NU1900 취약성 피드 연결 경고 있음.
 - `tools/Test-Resident.ps1`: 갤러리 켜짐·블러 효과가 있는 세션으로 편집기 열기/닫기 2회 검사 통과. 대기 시 네이티브 프로세스 1개, 작업 집합 8.23~8.51MiB, 전용 커밋 1.31~1.34MiB. 각각 10,000,000바이트 미만. 편집기 시작 중 트레이 Exit도 종료 및 세션 폐기 정상.
+## 2026-10-31 트레이 캡처 시작 시 창 깜빡임 수정
+
+트레이에서 캡처를 위해 편집기를 시작할 때 최초 창 표시를 억제하고, 세션 복원 및 캡처 초기화를 숨겨진 상태에서 실행합니다. 캡처 결과를 추가한 뒤 편집 창을 표시합니다. 영역 선택을 취소하면 기존 세션 파일을 변경하지 않고 편집기를 종료해 네이티브 트레이 대기로 돌아갑니다. 실행 중인 편집기로 전달되는 캡처 요청도 먼저 창을 복원하지 않습니다.
+
+검증: Windows / .NET SDK 10.0.403. `dotnet build src/ASnapdo/ASnapdo.csproj -c Release --no-restore` 성공(경고 0, 오류 0). `dotnet run --project tests/ASnapdo.Smoke/ASnapdo.Smoke.csproj -c Release -- --capture-startup-test`에서 영역 캡처 시작 전 편집 창 미표시, 선택 취소 시 숨김 유지 및 종료, 전체 화면 캡처 완료 후 편집 창 표시를 확인했습니다. 실제 전역 단축키와 다중 모니터 조합의 수동 재검증은 미실시입니다.
+
+## 2026-10-31 세션 보안 개선 검증
+
+DPAPI 암호화·변조 거부·기존 평문 변환·기존 파일 보존·이미지 및 세션 자원 제한의 보안 회귀 검사, 전체 Smoke 및 캡처 시작 UI 검사 통과. 실제 트레이에서 암호화 세션 복원/저장 2회와 종료 삭제 통과. 별도 AppId의 설치·재설치·제거 검사 통과. 네이티브 PE의 보안 쿠키·CFG·ASLR·NX·CET 호환 플래그 확인. 상주 메모리 검사는 10,964,992바이트로 기존 10,000,000바이트 기준에서 실패했으며 검사 기준은 변경하지 않음. 상세 결과와 빌드 중 일시적 리소스 갱신 오류의 재시도 내용은 [SECURITY_REVIEW.md](SECURITY_REVIEW.md) 참고.
+
+## ASnapdo 1.0.1 릴리즈 검증 — 2026-10-31
+
+1.0.1 버전의 보안 회귀·전체 Smoke·캡처 시작·실제 트레이 암호화 세션 생명주기·긴 경로 검사 통과. 별도 AppId로 설치·재설치·제거 및 기본 체크 로그인 자동 실행 등록 통과. 설치 EXE에도 VersionInfoVersion/VersionInfoProductVersion을 명시했습니다. 설치 파일과 SHA-256은 [RELEASE_1.0.1.md](RELEASE_1.0.1.md)에 기록합니다. 앞서 확인한 미서명·백신 검사 미완료·대기 메모리 목표 초과는 그대로 남아 있습니다.

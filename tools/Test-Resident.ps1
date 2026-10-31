@@ -39,9 +39,8 @@ try {
             Start-Sleep -Seconds 1
             [void][ResidentWindow]::PostMessage($editor.MainWindowHandle, 0x10, [IntPtr]::Zero, [IntPtr]::Zero)
             Wait-Until { $editor.Refresh(); $editor.HasExited }
-            $session = Get-Content -LiteralPath "$profileFolder\session.json" -Raw | ConvertFrom-Json
-            if ($session.Documents.Count -ne 1 -or $session.Documents[0].Name -ne 'fixture.png') { throw 'Session was not preserved.' }
-            if (@($session.Documents[0].Annotations | Where-Object { $_.Kind -eq 6 }).Count -lt 1) { throw 'Raster effect was lost across editor close.' }
+            & dotnet run --project "$PSScriptRoot\..\tests\ASnapdo.Smoke\ASnapdo.Smoke.csproj" -c Release --no-build -- --session-verify "$profileFolder\session.json"
+            if ($LASTEXITCODE -ne 0) { throw 'Encrypted session verification failed.' }
         }
         Start-Sleep -Seconds 2
         $related = @(Get-Process ASnapdo -ErrorAction SilentlyContinue | Where-Object { $_.Path.StartsWith($AppFolder, [StringComparison]::OrdinalIgnoreCase) })

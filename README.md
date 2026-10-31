@@ -1,6 +1,6 @@
 # ASnapdo
 
-[설치 파일 다운로드](https://github.com/mant81/ASnapdo/releases/tag/v1.0.0) · [릴리즈 이력](CHANGELOG.md)
+[설치 파일 다운로드](https://github.com/mant81/ASnapdo/releases/tag/v1.0.1) · [릴리즈 이력](CHANGELOG.md)
 
 Windows 10/11용 화면 캡처 및 주석 편집기의 개발 기반입니다. .NET 10 / WinForms를 사용하며 SDK `10.0.403`을 기준으로 합니다.
 
@@ -18,11 +18,11 @@ dotnet build src/ASnapdo/ASnapdo.csproj -c Release
 powershell -NoProfile -ExecutionPolicy Bypass -File build-installer.ps1
 ```
 
-설치 파일: `release\setup\asnapdo_inst_x64_1.0.0.exe`. Visual Studio C++ Build Tools와 Inno Setup 6 컴파일러가 필요합니다. Inno Setup 경로가 다르면 `build-installer.ps1 -Compiler "ISCC.exe의 전체 경로"`로 지정합니다.
+설치 파일: `release\setup\asnapdo_inst_x64_1.0.1.exe`. Visual Studio C++ Build Tools와 Inno Setup 6 컴파일러가 필요합니다. Inno Setup 경로가 다르면 `build-installer.ps1 -Compiler "ISCC.exe의 전체 경로"`로 지정합니다.
 
 설치형은 `ASnapdo.exe`(약 20KB 네이티브 트레이 상주부)와 `editor\ASnapdo.exe` 및 DLL·.NET 런타임을 분리합니다. `release\app\ASnapdo.exe` 하나만 배포하지 말고 설치 파일을 전달하세요. PDB는 설치 대상에서 제외됩니다. 기본 설치 폴더는 C:\Program Files\ASnapdo이며 설치할 때 관리자 권한이 필요합니다. 자동 실행은 원래 설치를 시작한 사용자 권한으로 등록합니다.
 
-설치 시 또는 **설정 → 일반 → Windows 로그인 시 자동 실행**에서 로그인 자동 실행을 켤 수 있습니다. 기본값은 꺼짐입니다. 자동 실행은 트레이에서 조용히 시작합니다.
+설치 시 또는 **설정 → 일반 → Windows 로그인 시 자동 실행**에서 로그인 자동 실행을 켤 수 있습니다. 설치 화면에서는 기본 체크 상태이며 사용자가 해제할 수 있습니다. 자동 실행은 트레이에서 조용히 시작합니다.
 
 트레이 대기 시 .NET 편집기를 종료하여 네이티브 프로세스 하나만 유지합니다. 창 X로 닫으면 탭·이미지·주석·Undo·배율·스크롤을 `%LOCALAPPDATA%\ASnapdo\session.json`에 보관하고 다음 열기에서 복원합니다. 트레이 종료는 저장 확인 없이 세션을 버립니다. 세션 보관 실패 시 편집 창이 유지됩니다.
 
@@ -70,3 +70,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File build-installer.ps1
 
 붙여넣은 이미지는 이동·크기 조절·삭제할 수 있고 Ctrl+Z로 취소할 수 있습니다. 대상 이미지보다 크면 비율을 유지해 축소됩니다. Ctrl+C는 기존처럼 전체 편집 이미지를 복사합니다.
 
+
+## Windows code signing
+
+See [code signing and SmartScreen](docs/CODE_SIGNING.md) for signed release builds. Use build-installer.ps1 -CertificateThumbprint with a trusted code signing certificate. Unsigned builds may display a SmartScreen warning.
+
+설치 완료 시 실행 선택 체크박스 없이 원래 사용자 권한으로 ASnapdo를 트레이에서 자동 실행합니다. 편집 창은 열지 않습니다. 무인 설치에서는 실행하지 않습니다. Windows 로그인 시 자동 실행은 별도의 선택 설정으로 유지합니다.
+
+보안 점검 및 제한은 [docs/SECURITY_REVIEW.md](docs/SECURITY_REVIEW.md)를 참고하세요. 창 X로 보관한 세션의 원본·주석·실행 취소 이력은 현재 Windows 사용자 계정의 DPAPI로 암호화합니다. 기존 평문 세션은 검증 후 자동 변환하며 같은 계정 권한의 프로그램까지 차단하지는 못합니다. 세션 파일은 다른 계정/PC에서 복원되지 않을 수 있으므로 공유하지 마세요. 트레이 종료 시 파일을 삭제하지만 보안 삭제를 보장하지 않습니다.
+
+세션은 128MiB·128개 탭·문서별 Undo 256개와 주석 2,048개를 지원합니다. 이미지 파일은 64MiB·6,400만 픽셀·한 변 32,768픽셀까지 허용하며 PNG/JPEG/BMP 헤더를 디코딩 전에 검사합니다. 제한 초과 시 오류를 안내하고 기존 편집 상태를 유지합니다. 보안 회귀 검사는 `dotnet run --project tests/ASnapdo.Smoke -c Release -- --security-test`, 실제 암호화 세션 생명주기 검사는 `powershell -NoProfile -ExecutionPolicy Bypass -File tools/Test-SessionLifecycle.ps1`입니다. 대기 메모리는 현재 약 11MB로 기존 목표인 10MB를 초과합니다.

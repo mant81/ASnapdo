@@ -1,4 +1,4 @@
-#define AppVersion "1.0.0"
+#define AppVersion "1.0.1"
 #ifdef InstallSmoke
   #define InstallId "{{DC29BD00-83DA-43E5-9AEC-C7C51837AB16}"
   #define RunValueName "ASnapdo-InstallSmoke"
@@ -10,6 +10,8 @@
 AppId={#InstallId}
 AppName=ASnapdo
 AppVersion={#AppVersion}
+VersionInfoVersion={#AppVersion}
+VersionInfoProductVersion={#AppVersion}
 AppPublisher=AAStudio.kr
 LicenseFile=..\LICENSE.txt
 DefaultDirName={commonpf}\ASnapdo
@@ -40,7 +42,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "바탕 화면 바로가기 만들기"; Flags: unchecked
-Name: "startup"; Description: "Windows 로그인 시 자동 실행 (트레이 대기)"; Flags: unchecked
+Name: "startup"; Description: "Windows 로그인 시 자동 실행 (트레이 대기)"
 
 [Messages]
 korean.WizardLicense=무료 이용약관
@@ -65,7 +67,7 @@ Filename: "{app}\ASnapdo.exe"; Parameters: "--enable-startup-test"; Tasks: start
 #else
 Filename: "{app}\ASnapdo.exe"; Parameters: "--enable-startup"; Tasks: startup; Flags: runasoriginaluser runhidden waituntilterminated
 #endif
-Filename: "{app}\ASnapdo.exe"; Description: "ASnapdo 실행"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\ASnapdo.exe"; Parameters: "--background"; Flags: nowait runasoriginaluser skipifsilent
 
 [Code]
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

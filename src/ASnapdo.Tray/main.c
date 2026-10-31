@@ -5,10 +5,20 @@
 #include <shellapi.h>
 #include <shlobj.h>
 #include <string.h>
-#pragma function(memset)
-void* __cdecl memset(void* target, int value, size_t count) {
-    volatile unsigned char* p = target; while (count--) *p++ = (unsigned char)value; return target;
+// Never silently truncate or overflow paths.
+static void CopyTextChecked(WCHAR* target, size_t capacity, const WCHAR* source) {
+    size_t length = (size_t)lstrlenW(source);
+    if (length >= capacity) ExitProcess(ERROR_BUFFER_OVERFLOW);
+    for (size_t i = 0; i <= length; i++) target[i] = source[i];
 }
+static void AppendTextChecked(WCHAR* target, size_t capacity, const WCHAR* source) {
+    size_t used = (size_t)lstrlenW(target), length = (size_t)lstrlenW(source);
+    if (used >= capacity || length >= capacity - used) ExitProcess(ERROR_BUFFER_OVERFLOW);
+    for (size_t i = 0; i <= length; i++) target[used + i] = source[i];
+}
+#define TEXT_CAPACITY(target) (sizeof(target) / sizeof((target)[0]))
+#define CopyText(target, source) CopyTextChecked(target, TEXT_CAPACITY(target), source)
+#define AppendText(target, source) AppendTextChecked(target, TEXT_CAPACITY(target), source)
 
 static const WCHAR CLASS_NAME[] = L"ASnapdo.Tray";
 static HWND window;
@@ -66,7 +76,7 @@ static void RegisterKeys(void) {
         CloseHandle(file);
     }
     regionRegistered = RegisterOne(1, region); fullRegistered = RegisterOne(2, full);
-    lstrcpyW(tray.szTip, regionRegistered && fullRegistered ? L"ASnapdo" : L"ASnapdo - 캡처 단축키 충돌: 설정에서 변경하세요");
+    CopyText(tray.szTip, regionRegistered && fullRegistered ? L"ASnapdo" : L"ASnapdo - 캡처 단축키 충돌: 설정에서 변경하세요");
     Shell_NotifyIconW(NIM_MODIFY, &tray);
 }
 static void ReleaseKeys(void) { UnregisterHotKey(window, 1); UnregisterHotKey(window, 2); }
@@ -79,8 +89,8 @@ static void Launch(int action) {
     }
     if (editorProcess) { CloseHandle(editorProcess); editorProcess = NULL; }
     ReleaseKeys();
-    lstrcpyW(command, L"\""); lstrcatW(command, editorPath); lstrcatW(command, L"\" --managed-tray ");
-    lstrcatW(command, action == 1 ? L"--capture-region" : action == 2 ? L"--capture-full" : action == 3 ? L"--settings" : L"");
+    CopyText(command, L"\""); AppendText(command, editorPath); AppendText(command, L"\" --managed-tray ");
+    AppendText(command, action == 1 ? L"--capture-region" : action == 2 ? L"--capture-full" : action == 3 ? L"--settings" : L"");
     if (CreateProcessW(editorPath, command, NULL, NULL, FALSE, 0, NULL, basePath, &startup, &process)) {
         editorProcess = process.hProcess; editorPid = process.dwProcessId; CloseHandle(process.hThread);
     } else { RegisterKeys(); MessageBoxW(window, L"편집기를 실행할 수 없습니다. 설치 파일을 다시 확인하세요.", L"ASnapdo", MB_OK | MB_ICONERROR); }
@@ -126,25 +136,26 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM w, LPARAM l) 
     }
     return DefWindowProcW(hwnd, message, w, l);
 }
-void WINAPI wWinMainCRTStartup(void) {
+int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, PWSTR arguments, int showCommand) {
+    (void)instance; (void)previous; (void)arguments; (void)showCommand;
     WNDCLASSW wc = { 0 }; MSG message; WCHAR* last; HWND existing; int argc = 0; WCHAR** argv;
     BOOL background = FALSE; BOOL enableStartup = FALSE; BOOL testStartup = FALSE; DWORD mutexStatus;
-    HANDLE mutex;
-    (void)argc; (void)argv;
-    for (WCHAR* p = GetCommandLineW(); *p; p++) {
-        const WCHAR* a = p; const WCHAR* b = L"--background";
-        while (*b && *a == *b) { a++; b++; }
-        if (!*b) background = TRUE;
-        a = p; b = L"--enable-startup"; while (*b && *a == *b) { a++; b++; }
-        if (!*b) {
-            enableStartup = TRUE;
-            if (a[0] == L'-' && a[1] == L't' && a[2] == L'e' && a[3] == L's' && a[4] == L't' && (a[5] == 0 || a[5] == L' ' || a[5] == L'"')) testStartup = TRUE;
-        }
+    HANDLE mutex; DWORD pathLength;
+    // Exclude the working directory and PATH from subsequent DLL searches.
+    if (!SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS)) ExitProcess(GetLastError());
+    argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+    if (!argv) ExitProcess(GetLastError());
+    for (int i = 1; i < argc; i++) {
+        if (!lstrcmpW(argv[i], L"--background")) background = TRUE;
+        if (!lstrcmpW(argv[i], L"--enable-startup")) enableStartup = TRUE;
+        if (!lstrcmpW(argv[i], L"--enable-startup-test")) { enableStartup = TRUE; testStartup = TRUE; }
     }
+    LocalFree(argv);
     if (enableStartup) {
         HKEY key; LONG result;
-        GetModuleFileNameW(NULL, editorPath, 1024);
-        lstrcpyW(command, L"\""); lstrcatW(command, editorPath); lstrcatW(command, L"\" --background");
+        pathLength = GetModuleFileNameW(NULL, editorPath, TEXT_CAPACITY(editorPath));
+        if (!pathLength || pathLength >= TEXT_CAPACITY(editorPath)) ExitProcess(ERROR_BUFFER_OVERFLOW);
+        CopyText(command, L"\""); AppendText(command, editorPath); AppendText(command, L"\" --background");
         result = RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, NULL, 0, KEY_SET_VALUE, NULL, &key, NULL);
         if (result == ERROR_SUCCESS) {
             result = RegSetValueExW(key, testStartup ? L"ASnapdo-InstallSmoke" : L"ASnapdo", 0, REG_SZ, (BYTE*)command, (lstrlenW(command) + 1) * sizeof(WCHAR)); RegCloseKey(key);
@@ -156,21 +167,27 @@ void WINAPI wWinMainCRTStartup(void) {
         existing = FindWindowW(CLASS_NAME, NULL); if (existing && !background) PostMessageW(existing, WM_APP + 1, 0, 0);
         if (mutex) CloseHandle(mutex); ExitProcess(0);
     }
-    GetModuleFileNameW(NULL, basePath, 1024); last = basePath;
+    pathLength = GetModuleFileNameW(NULL, basePath, TEXT_CAPACITY(basePath));
+    if (!pathLength || pathLength >= TEXT_CAPACITY(basePath)) ExitProcess(ERROR_BUFFER_OVERFLOW);
+    last = basePath;
     for (WCHAR* p = basePath; *p; p++) if (*p == L'\\') last = p;
-    *last = 0; lstrcpyW(editorPath, basePath); lstrcatW(editorPath, L"\\editor\\ASnapdo.exe");
-    if (!GetEnvironmentVariableW(L"ASNAPDO_DATA_DIR", settingsPath, 1024)) {
-        ExpandEnvironmentStringsW(L"%LOCALAPPDATA%", settingsPath, 1024); lstrcatW(settingsPath, L"\\ASnapdo");
+    *last = 0; CopyText(editorPath, basePath); AppendText(editorPath, L"\\editor\\ASnapdo.exe");
+    pathLength = GetEnvironmentVariableW(L"ASNAPDO_DATA_DIR", settingsPath, TEXT_CAPACITY(settingsPath));
+    if (pathLength >= TEXT_CAPACITY(settingsPath)) ExitProcess(ERROR_BUFFER_OVERFLOW);
+    if (!pathLength) {
+        pathLength = ExpandEnvironmentStringsW(L"%LOCALAPPDATA%", settingsPath, TEXT_CAPACITY(settingsPath));
+        if (!pathLength || pathLength > TEXT_CAPACITY(settingsPath)) ExitProcess(ERROR_BUFFER_OVERFLOW);
+        AppendText(settingsPath, L"\\ASnapdo");
     }
     CreateDirectoryW(settingsPath, NULL);
-    lstrcpyW(sessionPath, settingsPath); lstrcatW(sessionPath, L"\\session.json"); lstrcatW(settingsPath, L"\\settings.json");
+    CopyText(sessionPath, settingsPath); AppendText(sessionPath, L"\\session.json"); AppendText(settingsPath, L"\\settings.json");
     wc.lpfnWndProc = WindowProc; wc.hInstance = GetModuleHandleW(NULL); wc.lpszClassName = CLASS_NAME;
     wc.hIcon = LoadIconW(wc.hInstance, MAKEINTRESOURCEW(1)); RegisterClassW(&wc);
     window = CreateWindowExW(0, CLASS_NAME, L"ASnapdo", WS_OVERLAPPED, 0, 0, 0, 0, NULL, NULL, wc.hInstance, NULL);
     if (!window) ExitProcess(GetLastError());
     taskbarCreated = RegisterWindowMessageW(L"TaskbarCreated");
     tray.cbSize = sizeof(tray); tray.hWnd = window; tray.uID = 1; tray.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
-    tray.uCallbackMessage = WM_APP + 10; tray.hIcon = wc.hIcon; lstrcpyW(tray.szTip, L"ASnapdo"); Shell_NotifyIconW(NIM_ADD, &tray);
+    tray.uCallbackMessage = WM_APP + 10; tray.hIcon = wc.hIcon; CopyText(tray.szTip, L"ASnapdo"); Shell_NotifyIconW(NIM_ADD, &tray);
     RegisterKeys(); SetTimer(window, 1, 500, NULL);
     if (!background) Launch(0);
     while (GetMessageW(&message, NULL, 0, 0) > 0) { TranslateMessage(&message); DispatchMessageW(&message); }

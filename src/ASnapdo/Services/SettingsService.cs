@@ -22,9 +22,18 @@ public static class SettingsService
         var path = Path.Combine(Folder, "settings.json");
         var legacy = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ACapdo", "settings.json");
         // Keep the complete legacy file and unknown fields intact. Never modify the source.
-        if (!File.Exists(path) && File.Exists(legacy)) File.Copy(legacy, path, false);
+        if (!File.Exists(path) && File.Exists(legacy))
+        {
+            if (new FileInfo(legacy).Length > 1024 * 1024) throw new InvalidDataException("이전 설정 파일이 1MiB 제한을 초과합니다.");
+            File.Copy(legacy, path, false);
+        }
         if (!File.Exists(path)) return new();
-        try { return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(path)) ?? new(); }
+        try
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            if (stream.Length > 1024 * 1024) throw new InvalidDataException("설정 파일이 1MiB 제한을 초과합니다.");
+            return JsonSerializer.Deserialize<AppSettings>(stream) ?? new();
+        }
         catch (JsonException) { File.Copy(path, path + $".invalid-{DateTime.Now:yyyyMMddHHmmssfff}", false); return new(); }
     }
     public static void Save(AppSettings settings)

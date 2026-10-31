@@ -1,4 +1,4 @@
-﻿using ASnapdo.Models;
+using ASnapdo.Models;
 
 namespace ASnapdo.Services;
 
@@ -19,6 +19,7 @@ public sealed class ClipboardService
     {
         using var image = Clipboard.GetImage();
         if (image == null) return false;
+        ImageSafety.CheckSize(image.Size);
         using var stream = new MemoryStream();
         image.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
         float scale = Math.Min(1f, Math.Min((float)document.Image.Width / image.Width, (float)document.Image.Height / image.Height));

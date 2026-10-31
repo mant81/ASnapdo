@@ -69,6 +69,8 @@ public sealed class CaptureDocument : IDisposable
     }
     internal SessionDocument ExportSession()
     {
+        if (undo.Count > 256 || Annotations.Count > 2048) throw new InvalidDataException("세션의 편집 이력 또는 주석 수가 제한을 초과합니다.");
+        Services.ImageSafety.CheckSize(Image.Size);
         return new(Name, SavePath, Dirty, Zoom, Selection, Encode(Image), Annotations,
             undo.Select(state => new SessionUndo(state.Annotations, state.Image == null ? null : Encode(state.Image))).ToList());
     }
@@ -83,7 +85,7 @@ public sealed class CaptureDocument : IDisposable
         catch { doc.Dispose(); throw; }
     }
     private static string Encode(Bitmap image) { using var stream = new MemoryStream(); image.Save(stream, System.Drawing.Imaging.ImageFormat.Png); return Convert.ToBase64String(stream.ToArray()); }
-    private static Bitmap Decode(string image) { using var stream = new MemoryStream(Convert.FromBase64String(image)); using var bitmap = new Bitmap(stream); return new Bitmap(bitmap); }
+    private static Bitmap Decode(string image) => Services.ImageSafety.LoadBase64(image);
     public void Dispose() { Image.Dispose(); foreach (var state in undo) state.Image?.Dispose(); undo.Clear(); Annotations.Clear(); }
 }
 

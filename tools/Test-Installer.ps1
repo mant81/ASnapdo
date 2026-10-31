@@ -8,7 +8,7 @@ $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 if (Test-Path -LiteralPath $destination) { throw 'Smoke install destination already exists; inspect it before retrying.' }
 try {
     foreach ($round in 1..2) {
-        $setup = Start-Process -FilePath $package -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/CURRENTUSER','/NOICONS','/TASKS=startup',"/DIR=$destination","/LOG=$log" -WindowStyle Hidden -PassThru -Wait
+        $setup = Start-Process -FilePath $package -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/CURRENTUSER','/NOICONS',"/DIR=$destination","/LOG=$log" -WindowStyle Hidden -PassThru -Wait
         if ($setup.ExitCode -ne 0) { throw "Installer returned $($setup.ExitCode)" }
         if (-not (Test-Path -LiteralPath "$destination\ASnapdo.exe") -or -not (Test-Path -LiteralPath "$destination\editor\ASnapdo.dll")) { throw 'Installed launcher/editor files are missing.' }
         $license = Get-Content -LiteralPath "$destination\LICENSE.txt" -Raw -Encoding UTF8

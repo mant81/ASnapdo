@@ -6,6 +6,51 @@ using ASnapdo.UI;
 
 internal static class Program
 {
+    private static void TestCaptureStartup()
+    {
+        string? previous = Environment.GetEnvironmentVariable("ASNAPDO_DATA_DIR");
+        string folder = Path.Combine(Path.GetTempPath(), "ASnapdo-capture-" + Guid.NewGuid());
+        Environment.SetEnvironmentVariable("ASNAPDO_DATA_DIR", folder);
+        try
+        {
+            foreach (string action in new[] { "--capture-region", "--capture-full" })
+            {
+                using var form = new MainForm(true, action);
+                bool prematureVisibility = false, selectionSeen = false, editorSeen = false, timedOut = false;
+                form.VisibleChanged += (_, _) =>
+                {
+                    if (!form.Visible) return;
+                    var tabs = (TabControl)typeof(MainForm).GetField("tabs", Private)!.GetValue(form)!;
+                    if (tabs.TabCount == 0 || !(bool)typeof(MainForm).GetField("capturing", Private)!.GetValue(form)!) prematureVisibility = true;
+                    editorSeen = true;
+                };
+                using var timer = new System.Windows.Forms.Timer { Interval = 20 };
+                var elapsed = System.Diagnostics.Stopwatch.StartNew();
+                timer.Tick += (_, _) =>
+                {
+                    foreach (Form overlay in Application.OpenForms.Cast<Form>().ToArray())
+                        if (overlay != form && overlay.GetType().Name == "SelectionForm" && overlay.Visible)
+                        {
+                            selectionSeen = true;
+                            overlay.DialogResult = DialogResult.Cancel;
+                        }
+                    if (editorSeen) form.Close();
+                    if (elapsed.Elapsed.TotalSeconds > 15) { timedOut = true; form.Close(); }
+                };
+                timer.Start();
+                Application.Run(form);
+                Check(!timedOut && !prematureVisibility, action + ": no editor flash before capture");
+                Check(action == "--capture-region" ? selectionSeen && !editorSeen : editorSeen,
+                    action + ": cancel stays hidden / success opens editor");
+                Console.WriteLine("PASS: " + action + " startup visibility and capture outcome.");
+            }
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("ASNAPDO_DATA_DIR", previous);
+            if (Directory.Exists(folder)) Directory.Delete(folder, true);
+        }
+    }
     private static readonly BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
     [STAThread]
     private static void Main(string[] args)
@@ -17,6 +62,23 @@ internal static class Program
             doc.Checkpoint(); doc.Annotations.Add(new Annotation { Kind = AnnotationKind.Rectangle, Color = Color.Red, Bounds = new(20, 30, 100, 80) });
             doc.ApplyPixelEffect(new(15, 25, 120, 100), PixelEffectKind.Blur, 8);
             SessionService.Save([doc], [Point.Empty], 0, args[1]); return;
+        }
+        if (args.Contains("--capture-startup-test"))
+        {
+            TestCaptureStartup();
+            return;
+        }
+        if (args.Contains("--security-test")) { SecurityChecks.Run(); return; }
+        if (args.Length == 2 && args[0] == "--session-verify")
+        {
+            var session = SessionService.Load(args[1]);
+            try
+            {
+                Check(session.Documents.Count == 1 && session.Documents[0].Name == "fixture.png", "Session was not preserved.");
+                Check(session.Documents[0].Annotations.Any(a => a.Kind == AnnotationKind.PixelPatch), "Raster effect was lost across close.");
+            }
+            finally { foreach (var document in session.Documents) document.Dispose(); }
+            Console.WriteLine("PASS: encrypted fixture session preserved."); return;
         }
         using var form = new MainForm { Size = new Size(1280, 800) };
         int result = 0;

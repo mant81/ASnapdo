@@ -25,10 +25,15 @@ public sealed class MainForm : Form
     private readonly ToolTip tips = new() { InitialDelay = 500, ReshowDelay = 100, AutoPopDelay = 5000 };
     private NumericUpDown? strokeControl;
     private bool exiting, capturing, updatingInspector;
+    private bool deferCaptureStartup, startupInitialized;
+    private readonly bool captureOnlyStartup;
+    private Action? initializeStartup;
     private EditorCanvas? Editor => tabs.SelectedTab?.Controls.OfType<Panel>().FirstOrDefault()?.Controls.OfType<EditorCanvas>().FirstOrDefault();
 
     public MainForm(bool managedTray = false, string? startupAction = null)
     {
+        captureOnlyStartup = managedTray && startupAction is "--capture-region" or "--capture-full";
+        deferCaptureStartup = captureOnlyStartup;
         Icon = AppIcon.Load();
         Disposed += (_, _) => Icon?.Dispose();
         Text = "ASnapdo"; Width = 1160; Height = 620; MinimumSize = new Size(900, 500); StartPosition = FormStartPosition.CenterScreen;
@@ -317,8 +322,10 @@ public sealed class MainForm : Form
         tray = new NotifyIcon { Icon = Icon, Text = "ASnapdo", Visible = !managedTray, ContextMenuStrip = menu };
         tray.DoubleClick += (_, _) => Restore();
         hotkeys = new GlobalHotkeyService(Handle);
-        Shown += (_, _) =>
+        initializeStartup = () =>
         {
+            if (startupInitialized) return;
+            startupInitialized = true;
             bool region = hotkeys.Set(1, settings.RegionHotkey), full = hotkeys.Set(2, settings.FullscreenHotkey);
             status.Text = region && full ? "영역 또는 전체 화면을 캡처하세요." : "일부 전역 단축키를 등록하지 못했습니다. 설정에서 변경하세요.";
             if (managedTray) BeginInvoke(new Action(() =>
@@ -339,6 +346,7 @@ public sealed class MainForm : Form
                 });
             }));
         };
+        Shown += (_, _) => initializeStartup();
         FormClosing += (_, e) =>
         {
             if (e.CloseReason == CloseReason.UserClosing && !exiting)
@@ -357,6 +365,17 @@ public sealed class MainForm : Form
         };
         FormClosed += (_, _) => { hotkeys.Dispose(); tray.Dispose(); menu.Dispose(); tips.Dispose(); foreach (TabPage page in tabs.TabPages) Document(page).Dispose(); };
         RefreshStatus();
+    }
+    protected override void SetVisibleCore(bool value)
+    {
+        if (value && deferCaptureStartup)
+        {
+            deferCaptureStartup = false;
+            base.SetVisibleCore(false);
+            BeginInvoke(new Action(() => initializeStartup?.Invoke()));
+            return;
+        }
+        base.SetVisibleCore(value);
     }
     private static Button HeaderButton(string title, bool primary)
     {
@@ -384,7 +403,7 @@ public sealed class MainForm : Form
     private static ToolStripButton ActionButton(ToolStrip strip, string title, Action action) { var item = new ToolStripButton(title) { DisplayStyle = ToolStripItemDisplayStyle.Text, ForeColor = Color.FromArgb(51, 65, 85), Padding = new Padding(8, 3, 8, 3) }; item.Click += (_, _) => action(); strip.Items.Add(item); return item; }
     private static CaptureDocument Document(TabPage page) => (CaptureDocument)page.Tag!;
     private void Restore() { Show(); if (WindowState == FormWindowState.Minimized) WindowState = FormWindowState.Normal; Activate(); }
-    private void Guard(Action action) { try { action(); } catch (Exception e) { status.Text = $"작업 실패: {e.Message}"; } }
+    private void Guard(Action action) { try { action(); } catch (Exception e) { if (captureOnlyStartup && !Visible) Restore(); status.Text = $"작업 실패: {e.Message}"; } }
     private async Task CaptureAsync(bool region)
     {
         if (capturing || !Enabled || OwnedForms.Any(form => form.Visible)) return;
@@ -405,7 +424,13 @@ public sealed class MainForm : Form
             AutoSaveCapture(Editor!.Document);
         }
         catch (Exception e) { Restore(); status.Text = $"캡처 실패: {e.Message}"; }
-        finally { capturing = false; }
+        finally
+        {
+            capturing = false;
+            // A cancelled cold capture leaves the saved session untouched and releases
+            // the editor so the native tray can register its hotkeys again.
+            if (captureOnlyStartup && !Visible) { exiting = true; Close(); }
+        }
     }
     private void AutoSaveCapture(CaptureDocument document)
     {
@@ -452,7 +477,7 @@ public sealed class MainForm : Form
     {
         using var dialog = new OpenFileDialog { Filter = "이미지|*.png;*.jpg;*.jpeg;*.bmp" };
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
-        using var source = new Bitmap(dialog.FileName); AddDocument(new Bitmap(source));
+        AddDocument(ImageSafety.LoadFile(dialog.FileName));
     });
     private bool Save()
     {
@@ -621,10 +646,9 @@ public sealed class MainForm : Form
         if (m.Msg == 0x8000 + 41)
         {
             if (!Enabled || OwnedForms.Any(form => form.Visible)) return;
-            Restore();
             int action = m.WParam.ToInt32();
             if (action == 1 || action == 2) _ = CaptureAsync(action == 1);
-            else if (action == 3) Configure();
+            else { Restore(); if (action == 3) Configure(); }
             return;
         }
         if (m.Msg == 0x8000 + 42)

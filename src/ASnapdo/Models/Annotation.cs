@@ -1,4 +1,4 @@
-﻿namespace ASnapdo.Models;
+namespace ASnapdo.Models;
 
 public enum AnnotationKind { Rectangle, Arrow, Text, Number, Highlight, Image, PixelPatch }
 
@@ -31,8 +31,7 @@ public sealed record Annotation
         switch (Kind)
         {
             case AnnotationKind.Image:
-                using (var stream = new MemoryStream(Convert.FromBase64String(ImageData)))
-                using (var image = System.Drawing.Image.FromStream(stream)) g.DrawImage(image, b);
+                using (var image = Services.ImageSafety.LoadBase64(ImageData)) g.DrawImage(image, b);
                 break;
             case AnnotationKind.PixelPatch:
                 var state = g.Save();
@@ -41,8 +40,7 @@ public sealed record Annotation
                     g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
                     g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
                     g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-                    using var stream = new MemoryStream(Convert.FromBase64String(ImageData));
-                    using var image = System.Drawing.Image.FromStream(stream); g.DrawImage(image, b);
+                    using var image = Services.ImageSafety.LoadBase64(ImageData); g.DrawImage(image, b);
                 }
                 finally { g.Restore(state); }
                 break;
