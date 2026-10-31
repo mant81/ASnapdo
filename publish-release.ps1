@@ -8,7 +8,7 @@ try {
     $tag = "v$version"
     $installer = Join-Path $PSScriptRoot "release/setup/asnapdo_inst_x64_$version.exe"
     if (-not (Test-Path -LiteralPath $installer)) { throw 'Build the installer first with build-installer.ps1.' }
-    if ((Get-Item -LiteralPath $installer).VersionInfo.ProductVersion -ne $version) { throw 'Installer version does not match project.' }
+    if ((Get-Item -LiteralPath $installer).VersionInfo.ProductVersion.Trim() -ne $version) { throw 'Installer version does not match project.' }
     $dirty = git status --porcelain
     if ($LASTEXITCODE -ne 0 -or $dirty) { throw 'Commit and push all source changes before publishing.' }
     $commit = git rev-parse HEAD
