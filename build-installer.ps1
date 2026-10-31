@@ -51,6 +51,6 @@ try {
     & $Compiler /Q installer/ASnapdo.iss
     if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
     if ($CertificateThumbprint) {
-        Sign-ReleaseFile (Join-Path $PSScriptRoot 'release\setup\asnapdo_inst_x64_1.0.1.exe')
+        Sign-ReleaseFile (Join-Path $PSScriptRoot 'release\setup\asnapdo_inst_x64_1.0.2.exe')
     }
 } finally { Pop-Location }

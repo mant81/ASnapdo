@@ -8,11 +8,16 @@ public sealed class CaptureGallery : UserControl
     private readonly FlowLayoutPanel strip = new() { Dock = DockStyle.Fill, WrapContents = false, AutoScroll = true, Padding = new Padding(8, 4, 8, 0) };
     private readonly ToolTip tips = new();
     public event Action<CaptureDocument>? DocumentSelected;
+    public event EventHandler? CloseRequested;
     public int ThumbnailCount => strip.Controls.Count;
     public CaptureGallery()
     {
         BackColor = Color.FromArgb(248, 250, 252); AccessibleName = "캡처 갤러리";
-        Controls.Add(strip); Height = 112;
+        var closeArea = new Panel { Dock = DockStyle.Right, Width = 40, Padding = new Padding(4) };
+        var close = new ChromeButton { IconKey = "close", Dock = DockStyle.Top, Height = 32, AccessibleName = "캡처 갤러리 닫기" };
+        close.Click += (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty);
+        closeArea.Controls.Add(close);
+        Controls.Add(strip); Controls.Add(closeArea); Height = 112;
     }
     public void SetDocuments(IReadOnlyList<CaptureDocument> documents, CaptureDocument? selected)
     {

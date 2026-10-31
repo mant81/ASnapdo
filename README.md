@@ -1,6 +1,6 @@
 # ASnapdo
 
-[설치 파일 다운로드](https://github.com/mant81/ASnapdo/releases/tag/v1.0.1) · [릴리즈 이력](CHANGELOG.md)
+[설치 파일 다운로드](https://github.com/mant81/ASnapdo/releases/tag/v1.0.2) · [릴리즈 이력](CHANGELOG.md)
 
 Windows 10/11용 화면 캡처 및 주석 편집기의 개발 기반입니다. .NET 10 / WinForms를 사용하며 SDK `10.0.403`을 기준으로 합니다.
 
@@ -18,9 +18,15 @@ dotnet build src/ASnapdo/ASnapdo.csproj -c Release
 powershell -NoProfile -ExecutionPolicy Bypass -File build-installer.ps1
 ```
 
-설치 파일: `release\setup\asnapdo_inst_x64_1.0.1.exe`. Visual Studio C++ Build Tools와 Inno Setup 6 컴파일러가 필요합니다. Inno Setup 경로가 다르면 `build-installer.ps1 -Compiler "ISCC.exe의 전체 경로"`로 지정합니다.
+설치 파일: `release\setup\asnapdo_inst_x64_1.0.2.exe`. Visual Studio C++ Build Tools와 Inno Setup 6 컴파일러가 필요합니다. Inno Setup 경로가 다르면 `build-installer.ps1 -Compiler "ISCC.exe의 전체 경로"`로 지정합니다.
 
 설치형은 `ASnapdo.exe`(약 20KB 네이티브 트레이 상주부)와 `editor\ASnapdo.exe` 및 DLL·.NET 런타임을 분리합니다. `release\app\ASnapdo.exe` 하나만 배포하지 말고 설치 파일을 전달하세요. PDB는 설치 대상에서 제외됩니다. 기본 설치 폴더는 C:\Program Files\ASnapdo이며 설치할 때 관리자 권한이 필요합니다. 자동 실행은 원래 설치를 시작한 사용자 권한으로 등록합니다.
+
+배포 시 버전과 `CHANGELOG.md`를 갱신하고 설치 파일을 빌드한 뒤 소스를 커밋·푸시합니다. 이후 아래 명령으로 GitHub Release를 만듭니다. 현재 변경 이력과 GitHub 자동 릴리즈 노트가 포함되며, 설치 파일 업로드 검증 후 공개됩니다. 인증은 `GH_TOKEN`/`GITHUB_TOKEN` 또는 Git 자격 증명 관리자를 사용합니다.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File publish-release.ps1
+```
 
 설치 시 또는 **설정 → 일반 → Windows 로그인 시 자동 실행**에서 로그인 자동 실행을 켤 수 있습니다. 설치 화면에서는 기본 체크 상태이며 사용자가 해제할 수 있습니다. 자동 실행은 트레이에서 조용히 시작합니다.
 

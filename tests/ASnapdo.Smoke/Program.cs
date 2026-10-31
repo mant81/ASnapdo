@@ -6,6 +6,180 @@ using ASnapdo.UI;
 
 internal static class Program
 {
+    private static void TestGalleryClose()
+    {
+        string? previous = Environment.GetEnvironmentVariable("ASNAPDO_DATA_DIR");
+        string folder = Path.Combine(Path.GetTempPath(), "ASnapdo-gallery-" + Guid.NewGuid());
+        Environment.SetEnvironmentVariable("ASNAPDO_DATA_DIR", folder);
+        try
+        {
+            SettingsService.Save(new AppSettings { ShowGallery = true });
+            using var form = new MainForm(); form.Show();
+            for (int i = 0; i < 8; i++) typeof(MainForm).GetMethod("AddDocument", Private)!.Invoke(form, [Sample(400, 300)]);
+            Application.DoEvents();
+            var gallery = (CaptureGallery)typeof(MainForm).GetField("gallery", Private)!.GetValue(form)!;
+            var tabs = (TabControl)typeof(MainForm).GetField("tabs", Private)!.GetValue(form)!;
+            Check(gallery.Visible && gallery.ThumbnailCount == 8, "Gallery shows captures");
+            var close = gallery.Controls.OfType<Panel>().SelectMany(p => p.Controls.OfType<ChromeButton>()).Single();
+            Check(close.Visible && close.Parent!.Right == gallery.ClientSize.Width, "Gallery close remains at far right");
+            close.PerformClick(); Application.DoEvents();
+            Check(!gallery.Visible && gallery.ThumbnailCount == 0 && tabs.TabCount == 8, "Gallery closes and frees thumbnails without closing tabs");
+            Check(!SettingsService.Load().ShowGallery, "Gallery close persists hidden setting");
+            form.Hide();
+            Console.WriteLine("PASS: gallery right close button hides gallery, releases thumbnails and persists setting while retaining tabs.");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("ASNAPDO_DATA_DIR", previous);
+            if (Directory.Exists(folder)) Directory.Delete(folder, true);
+        }
+    }
+    private static void TestContextualToolbar()
+    {
+        using var form = new MainForm();
+        form.Show();
+        typeof(MainForm).GetMethod("AddDocument", Private)!.Invoke(form, [Sample(1048, 563)]);
+        var editor = (EditorCanvas)typeof(MainForm).GetProperty("Editor", Private)!.GetValue(form)!;
+        IEnumerable<Control> Descendants(Control root) => root.Controls.Cast<Control>().SelectMany(c => new[] { c }.Concat(Descendants(c)));
+        var controls = Descendants(form).ToArray();
+        var fill = controls.OfType<CheckBox>().Single(c => c.Text == "채우기");
+        var dashed = controls.OfType<CheckBox>().Single(c => c.Text == "점선");
+        var bold = controls.OfType<CheckBox>().Single(c => c.Text == "굵게");
+        var duplicate = controls.OfType<ChromeButton>().Single(c => c.Text == "복제");
+        var refresh = typeof(MainForm).GetMethod("RefreshStatus", Private)!;
+        foreach (var kind in new AnnotationKind?[] { null, AnnotationKind.Rectangle, AnnotationKind.Arrow, AnnotationKind.Text, AnnotationKind.Number, AnnotationKind.Image })
+        {
+            editor.Tool = kind; refresh.Invoke(form, null); Application.DoEvents();
+            Check(fill.Visible == (kind == AnnotationKind.Rectangle), "Fill visibility matches tool");
+            Check(dashed.Visible == (kind is AnnotationKind.Rectangle or AnnotationKind.Arrow), "Dash visibility matches tool");
+            Check(bold.Visible == (kind == AnnotationKind.Text), "Text controls match tool");
+            Check(!duplicate.Visible, "No object commands without selection");
+        }
+        editor.Document.Annotations.Add(new Annotation { Kind = AnnotationKind.Rectangle, Bounds = new(30, 30, 120, 80) });
+        editor.Document.Selection = editor.Document.Annotations.Last().Id;
+        editor.Tool = null; refresh.Invoke(form, null); Application.DoEvents();
+        Check(fill.Visible && duplicate.Visible, "Selected object reveals its properties and commands");
+        int visibilityChanges = 0, positionChanges = 0;
+        var inspector = (FlowLayoutPanel)fill.Parent!;
+        var snapshot = inspector.Controls.Cast<Control>().ToDictionary(c => c, c => (c.Visible, c.Bounds));
+        foreach (Control control in inspector.Controls)
+        {
+            control.VisibleChanged += (_, _) => visibilityChanges++;
+            control.LocationChanged += (_, _) => positionChanges++;
+        }
+        for (int i = 0; i < 20; i++) refresh.Invoke(form, null);
+        Check(visibilityChanges == 0 && positionChanges == 0, "Repeated selection refresh never toggles or moves inspector controls");
+        Drag(editor, new(60, 60), new(80, 90));
+        Check(visibilityChanges == 0 && positionChanges == 0, "Moving selected object keeps inspector stable");
+        Check(snapshot.All(item => item.Key.Visible == item.Value.Visible && item.Key.Bounds == item.Value.Bounds), "Inspector geometry stays unchanged after movement");
+        foreach (int width in new[] { 1160, 900 })
+        {
+            form.Width = width; Application.DoEvents();
+            foreach (var button in controls.OfType<ChromeButton>().Where(c => c.Visible && c.Parent is FlowLayoutPanel && c.Parent.Parent?.AccessibleName is "선택" or "주석" or "이미지 편집" or "이미지 영역"))
+                Check(button.Right <= button.Parent!.ClientSize.Width, "Tool group contains every button");
+        }
+        form.Width = 1160; Application.DoEvents();
+        Save(form, Path.Combine(Environment.CurrentDirectory, "docs", "screenshots", "asnapdo-contextual-toolbar.png"));
+        form.Hide();
+        Console.WriteLine("PASS: contextual controls, selected object actions, toolbar groups at 1160/900 widths; running UI screenshot saved.");
+    }
+    private static void TestAutomaticRegionCopy()
+    {
+        using var form = new MainForm();
+        form.Show();
+        typeof(MainForm).GetMethod("AddDocument", Private)!.Invoke(form, [Sample(400, 300)]);
+        var editor = (EditorCanvas)typeof(MainForm).GetProperty("Editor", Private)!.GetValue(form)!;
+        using var expected = editor.Document.Compose();
+        editor.StartCrop(true);
+        Drag(editor, new(20, 30), new(180, 130));
+        Check(!editor.CropMode, "Successful automatic copy ends selection mode");
+        using var copied = Clipboard.GetImage()!;
+        Check(copied.Size == new Size(160, 100), "Mouse release copies selected region automatically");
+        using var pixels = new Bitmap(copied);
+        Check(pixels.GetPixel(10, 10) == expected.GetPixel(30, 40), "Automatic region copy has correct pixels");
+        editor.StartCrop(true);
+        Drag(editor, new(50, 50), new(50, 50));
+        using var afterEmpty = Clipboard.GetImage()!;
+        Check(afterEmpty.Size == copied.Size && editor.CropMode, "Empty click does not copy");
+        Mouse(editor, "OnMouseDown", new(20, 20));
+        Mouse(editor, "OnMouseMove", new(80, 80));
+        editor.CancelCrop();
+        Mouse(editor, "OnMouseUp", new(80, 80));
+        using var afterCancel = Clipboard.GetImage()!;
+        Check(afterCancel.Size == copied.Size && !editor.CropMode, "Cancelled drag does not copy");
+        Check(editor.Document.Image.Size == new Size(400, 300), "Region copy preserves source image");
+        var panel = (RegionClipboardPanel)typeof(MainForm).GetField("regionClipboard", Private)!.GetValue(form)!;
+        Check(panel.Visible && panel.Snapshot?.Size == copied.Size, "Successful region copy displays preview");
+        typeof(MainForm).GetMethod("AddDocument", Private)!.Invoke(form, [Sample(600, 400)]);
+        var destination = (EditorCanvas)typeof(MainForm).GetProperty("Editor", Private)!.GetValue(form)!;
+        var background = destination.Document.Image;
+        using (var unrelated = Sample(10, 10)) Clipboard.SetImage(unrelated);
+        IEnumerable<Control> Descendants(Control root) => root.Controls.Cast<Control>().SelectMany(c => new[] { c }.Concat(Descendants(c)));
+        Descendants(panel).OfType<ChromeButton>().Single(b => b.Text == "현재 탭에 붙여넣기").PerformClick();
+        Check(destination.Document.Annotations.Single().Bounds.Size == new SizeF(160, 100), "Panel pastes displayed snapshot after tab and OS clipboard changes");
+        Check(ReferenceEquals(background, destination.Document.Image), "Panel paste preserves destination background");
+        form.Height = 800;
+        Application.DoEvents();
+        Check(panel.Height < panel.Parent!.ClientSize.Height, "Clipboard is a compact card instead of full height sidebar");
+        Check(panel.Right < panel.Parent.ClientSize.Width && panel.Top > 0, "Clipboard card has edge spacing");
+        int cardHeight = panel.Height;
+        form.Height = 900; Application.DoEvents();
+        Check(panel.Height == cardHeight, "Taller window does not stretch clipboard card");
+        Check(panel.Parent.Controls.Cast<Control>().Any(c => c != panel && c.Width == panel.Parent.ClientSize.Width), "Clipboard card preserves full canvas width");
+        form.Height = 620; Application.DoEvents();
+        Application.DoEvents();
+        using (var screenshot = new Bitmap(panel.Width, panel.Height))
+        {
+            panel.DrawToBitmap(screenshot, new Rectangle(Point.Empty, screenshot.Size));
+            screenshot.Save(Path.Combine(Environment.CurrentDirectory, "docs", "screenshots", "asnapdo-clipboard-card.png"));
+        }
+        Descendants(panel).OfType<ChromeButton>().Single(b => b.AccessibleName == "클립보드 패널 닫기").PerformClick();
+        Check(!panel.Visible && panel.ItemCount == 1, "Closing panel hides history without deleting it");
+        for (int i = 0; i < 14; i++)
+        {
+            using var item = Sample(40 + i, 30);
+            panel.ShowSnapshot(item);
+        }
+        Check(panel.ItemCount == 12 && panel.Snapshot!.Width == 53, "Clipboard history is bounded and newest item selected");
+        panel.SelectItem(5);
+        Check(panel.Snapshot!.Width == 48, "Older clipboard item can be selected");
+        Descendants(panel).OfType<ChromeButton>().Single(b => b.Text == "현재 탭에 붙여넣기").PerformClick();
+        Check(destination.Document.Annotations.Last().Bounds.Width == 48, "Selected older item is pasted");
+        panel.DeleteSelected(); Check(panel.ItemCount == 11, "Individual history item can be deleted");
+        form.Height = 900; Application.DoEvents();
+        using (var screenshot = new Bitmap(panel.Width, panel.Height))
+        {
+            panel.DrawToBitmap(screenshot, new Rectangle(Point.Empty, screenshot.Size));
+            screenshot.Save(Path.Combine(Environment.CurrentDirectory, "docs", "screenshots", "asnapdo-clipboard-list.png"));
+        }
+        panel.Clear(); Check(panel.ItemCount == 0 && panel.Snapshot == null, "Clear releases entire history");
+        form.Hide();
+        Console.WriteLine("PASS: mouse release automatically copies region; empty click and cancelled drag preserve clipboard.");
+    }
+    private static void TestNumberStamp()
+    {
+        using var document = new CaptureDocument(Sample(400, 300), "numbers.png");
+        using var canvas = new EditorCanvas(document) { Tool = AnnotationKind.Number };
+        canvas.CreateControl();
+        foreach (float zoom in new[] { 1f, .5f, 2f })
+        {
+            document.Zoom = zoom;
+            int x = (int)((40 + document.Annotations.Count * 60) * zoom);
+            int y = (int)(80 * zoom);
+            // Reproduce the automatic capture performed by WinForms before MouseDown.
+            canvas.Capture = true;
+            typeof(EditorCanvas).GetMethod("OnMouseDown", Private)!.Invoke(canvas, [new MouseEventArgs(MouseButtons.Left, 1, x, y, 0)]);
+            Check(!canvas.Capture, "Number stamp ends mouse capture");
+            typeof(EditorCanvas).GetMethod("OnMouseMove", Private)!.Invoke(canvas, [new MouseEventArgs(MouseButtons.Left, 0, x + 2, y + 2, 0)]);
+            typeof(EditorCanvas).GetMethod("OnMouseUp", Private)!.Invoke(canvas, [new MouseEventArgs(MouseButtons.Left, 1, x + 2, y + 2, 0)]);
+            var number = document.Annotations.Last();
+            Check(number.Text == document.Annotations.Count.ToString() && number.Bounds.Size == new SizeF(36, 36), "Sequential number retains default image-relative size after pointer movement");
+            Check(canvas.Tool == AnnotationKind.Number, "Number tool stays active");
+        }
+        document.Undo();
+        Check(document.Annotations.Count == 2 && document.Annotations.All(a => a.Bounds.Size == new SizeF(36, 36)), "One Undo removes only the latest number");
+        Console.WriteLine("PASS: number stamps retain default size and sequence at 50%, 100%, 200% zoom; Undo removes one stamp.");
+    }
     private static void TestCaptureStartup()
     {
         string? previous = Environment.GetEnvironmentVariable("ASNAPDO_DATA_DIR");
@@ -55,7 +229,24 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
+        try
+        {
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
+            Run(args);
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine("FAIL: " + exception);
+            Environment.ExitCode = 1;
+        }
+    }
+    private static void Run(string[] args)
+    {
         ApplicationConfiguration.Initialize();
+        if (args.Contains("--gallery-close-test")) { TestGalleryClose(); return; }
+        if (args.Contains("--contextual-toolbar-test")) { TestContextualToolbar(); return; }
+        if (args.Contains("--automatic-region-copy-test")) { TestAutomaticRegionCopy(); return; }
+        if (args.Contains("--number-stamp-test")) { TestNumberStamp(); return; }
         if (args.Length == 2 && args[0] == "--session-fixture")
         {
             using var doc = new CaptureDocument(Sample(800, 600), "fixture.png");

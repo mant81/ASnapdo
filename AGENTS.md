@@ -50,6 +50,14 @@ Current implementation originated as **ACapdo v0.8**. Rename identifiers and ass
 7. Test save naming collisions, mixed-DPI displays, multiple tabs, dirty close, background capture, and destination images with different sizes.
 8. Run build and tests when a Windows SDK environment exists; otherwise state precise limitations and do not fabricate test results.
 
+## Release and deployment rules
+
+- Every deployment must create a versioned GitHub Release in `mant81/ASnapdo` and attach the matching Windows installer (`asnapdo_inst_x64_<version>.exe`). A source-only tag or release is not a completed deployment.
+- Automatically include the current version's `CHANGELOG.md` section and GitHub-generated release notes. Use `publish-release.ps1` after building the installer and committing/pushing the release source.
+- Keep the editor, native launcher, installer, product documentation and download links on the same version. Never replace an existing published version with different binaries; increment the version.
+- Build and run relevant checks before publishing. Create the release as a draft, upload and verify the installer asset, then publish. Report the release URL, installer path and SHA-256.
+- Never commit signing keys or access tokens. Release publishing uses `GH_TOKEN`/`GITHUB_TOKEN` or the configured Git credential helper without printing credentials.
+
 ## Acceptance and communication
 
 Follow P0 → P1 → P2 checklists in `PRODUCT_SPEC.md`. After changes report files modified, build/test commands and actual results, artifacts, remaining blockers, and screenshot(s) of the running UI when possible. Do not present concept images as real application screenshots.

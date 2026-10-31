@@ -85,6 +85,16 @@ public sealed class ChromeButton : Button
         switch (key)
         {
             case "crop": g.DrawLines(pen, [new Point(5, 1), new Point(5, 15), new Point(19, 15)]); g.DrawLines(pen, [new Point(1, 5), new Point(15, 5), new Point(15, 19)]); break;
+            case "region-select":
+                pen.DashStyle = DashStyle.Dash;
+                g.DrawRectangle(pen, 3, 3, 14, 14);
+                break;
+            case "region-copy":
+                pen.DashStyle = DashStyle.Dash;
+                g.DrawRectangle(pen, 2, 2, 11, 11);
+                pen.DashStyle = DashStyle.Solid;
+                g.DrawRectangle(pen, 8, 8, 10, 10);
+                break;
             case "capture": g.DrawRectangle(pen, 3, 3, 14, 14); g.DrawLine(pen, 7, 1, 7, 5); g.DrawLine(pen, 1, 7, 5, 7); g.DrawLine(pen, 13, 15, 13, 19); g.DrawLine(pen, 15, 13, 19, 13); break;
             case "monitor": g.DrawRectangle(pen, 2, 3, 16, 11); g.DrawLine(pen, 10, 14, 10, 17); g.DrawLine(pen, 6, 18, 14, 18); break;
             case "select": g.DrawPolygon(pen, [new Point(4, 2), new Point(4, 15), new Point(7, 12), new Point(10, 18), new Point(13, 16), new Point(10, 11), new Point(15, 11)]); break;

@@ -21,6 +21,7 @@ public sealed partial class EditorCanvas : Control
     public Annotation? Selected => Document.Annotations.Find(a => a.Id == Document.Selection);
     public event EventHandler? Edited;
     public event EventHandler? SelectionChanged;
+    public event EventHandler? RegionCopyRequested;
     private PointF start;
     private Annotation? draft;
     private RectangleF original;
@@ -105,6 +106,8 @@ public sealed partial class EditorCanvas : Control
                 draft.Text = Math.Min(9999L, Document.Annotations.Where(a => a.Kind == AnnotationKind.Number).Select(a => int.TryParse(a.Text, out var n) ? (long)n : 0).DefaultIfEmpty().Max() + 1).ToString();
                 float size = Math.Min(36, Math.Min(Document.Image.Width, Document.Image.Height));
                 draft.Bounds = new(Math.Min(start.X, Document.Image.Width - size), Math.Min(start.Y, Document.Image.Height - size), size, size);
+                // WinForms captures the mouse before MouseDown; a stamp must not enter the drag path.
+                Capture = false;
                 CommitDraft(); return;
             }
         }
@@ -171,7 +174,12 @@ public sealed partial class EditorCanvas : Control
     {
         base.OnMouseUp(e);
         if (!Capture || e.Button != MouseButtons.Left) return;
-        if (CropMode) { MoveCropPointer(ImagePoint(e.Location)); Capture = false; RefreshEffectPreview(); return; }
+        if (CropMode)
+        {
+            MoveCropPointer(ImagePoint(e.Location)); Capture = false;
+            if (RegionCopyMode && CanApplyCrop) RegionCopyRequested?.Invoke(this, EventArgs.Empty);
+            RefreshEffectPreview(); return;
+        }
         Capture = false;
         if (draft != null) CommitDraft();
         else if (checkpointed) NotifyEdit();

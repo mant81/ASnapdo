@@ -19,6 +19,10 @@ public sealed class ClipboardService
     {
         using var image = Clipboard.GetImage();
         if (image == null) return false;
+        return PasteImage(document, image);
+    }
+    public bool PasteImage(CaptureDocument document, Image image)
+    {
         ImageSafety.CheckSize(image.Size);
         using var stream = new MemoryStream();
         image.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
