@@ -32,11 +32,22 @@ public sealed partial class EditorCanvas : Control
     private bool editingNew;
     private NumericUpDown? numberEditor;
     private Annotation? editingNumber;
+    private readonly System.Windows.Forms.Timer copyFeedbackTimer = new() { Interval = 1400 };
+    private bool showCopyFeedback;
 
     public EditorCanvas(CaptureDocument document)
     {
         Document = document; DoubleBuffered = true; TabStop = true; BackColor = Color.White;
+        copyFeedbackTimer.Tick += (_, _) => { copyFeedbackTimer.Stop(); showCopyFeedback = false; Invalidate(); };
+        Disposed += (_, _) => copyFeedbackTimer.Dispose();
         UpdateSize();
+    }
+    public void ShowCopyFeedback()
+    {
+        showCopyFeedback = true;
+        copyFeedbackTimer.Stop();
+        copyFeedbackTimer.Start();
+        Invalidate();
     }
     public void UpdateSize()
     {
@@ -57,6 +68,7 @@ public sealed partial class EditorCanvas : Control
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
+        var state = e.Graphics.Save();
         e.Graphics.ScaleTransform(Document.Zoom, Document.Zoom);
         e.Graphics.DrawImage(Document.Image, 0, 0, Document.Image.Width, Document.Image.Height);
         e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -68,19 +80,43 @@ public sealed partial class EditorCanvas : Control
             e.Graphics.DrawImage(effectPreview, CropBounds); e.Graphics.Restore(previewState);
         }
         draft?.Draw(e.Graphics);
-        if (CropMode) { PaintCrop(e.Graphics); return; }
-        if (Selected is not { } selected || textEditor != null) return;
-        var b = selected.Bounds;
-        using var pen = new Pen(Color.FromArgb(37, 99, 235), 1 / Document.Zoom);
-        pen.DashStyle = DashStyle.Dash;
-        e.Graphics.DrawRectangle(pen, b.X, b.Y, b.Width, b.Height);
-        pen.DashStyle = DashStyle.Solid;
-        float h = 7 / Document.Zoom;
-        foreach (var p in Handles(b))
+        if (CropMode) PaintCrop(e.Graphics);
+        else if (Selected is { } selected && textEditor == null)
         {
-            e.Graphics.FillRectangle(Brushes.White, p.X - h / 2, p.Y - h / 2, h, h);
-            e.Graphics.DrawRectangle(pen, p.X - h / 2, p.Y - h / 2, h, h);
+            var b = selected.Bounds;
+            using var pen = new Pen(Color.FromArgb(37, 99, 235), 1 / Document.Zoom);
+            pen.DashStyle = DashStyle.Dash;
+            e.Graphics.DrawRectangle(pen, b.X, b.Y, b.Width, b.Height);
+            pen.DashStyle = DashStyle.Solid;
+            float h = 7 / Document.Zoom;
+            foreach (var p in Handles(b))
+            {
+                e.Graphics.FillRectangle(Brushes.White, p.X - h / 2, p.Y - h / 2, h, h);
+                e.Graphics.DrawRectangle(pen, p.X - h / 2, p.Y - h / 2, h, h);
+            }
         }
+        e.Graphics.Restore(state);
+        if (showCopyFeedback) PaintCopyFeedback(e.Graphics);
+    }
+    private void PaintCopyFeedback(Graphics graphics)
+    {
+        const string message = "✓  이미지 복사 완료   ·   Ctrl+V";
+        using var font = new Font("Segoe UI", 11, FontStyle.Bold);
+        var size = graphics.MeasureString(message, font);
+        float width = size.Width + 36, height = 42;
+        var bounds = new RectangleF((ClientSize.Width - width) / 2, 20, width, height);
+        using var path = new GraphicsPath();
+        float radius = 12;
+        path.AddArc(bounds.Left, bounds.Top, radius * 2, radius * 2, 180, 90);
+        path.AddArc(bounds.Right - radius * 2, bounds.Top, radius * 2, radius * 2, 270, 90);
+        path.AddArc(bounds.Right - radius * 2, bounds.Bottom - radius * 2, radius * 2, radius * 2, 0, 90);
+        path.AddArc(bounds.Left, bounds.Bottom - radius * 2, radius * 2, radius * 2, 90, 90);
+        path.CloseFigure();
+        using var fill = new SolidBrush(Color.FromArgb(232, 37, 99, 235));
+        using var text = new SolidBrush(Color.White);
+        graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        graphics.FillPath(fill, path);
+        graphics.DrawString(message, font, text, bounds, new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
     }
     protected override void OnMouseDown(MouseEventArgs e)
     {

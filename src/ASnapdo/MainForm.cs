@@ -586,7 +586,14 @@ public sealed class MainForm : Form
         if (!clipboard.PasteImage(editor.Document)) { status.Text = "클립보드에 이미지가 없습니다."; return; }
         editor.CancelCrop(); editor.Tool = null; editor.NotifyEdit(); RefreshStatus();
     });
-    private void CopyImage() => Guard(() => { if (Editor != null) { Editor.FinishTextEdit(); clipboard.CopyImage(Editor.Document); status.Text = "합성 이미지를 복사했습니다."; } });
+    private void CopyImage() => Guard(() =>
+    {
+        if (Editor == null) return;
+        Editor.FinishTextEdit();
+        clipboard.CopyImage(Editor.Document);
+        Editor.ShowCopyFeedback();
+        status.Text = "✓ 캡처 이미지가 클립보드에 복사되었습니다. Ctrl+V로 붙여넣으세요.";
+    });
     private void Undo()
     {
         if (Editor is not { } editor) return;
