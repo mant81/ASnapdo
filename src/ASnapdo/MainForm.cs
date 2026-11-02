@@ -373,7 +373,7 @@ public sealed class MainForm : Form
             var document = Document(page);
             using var fill = new SolidBrush(active ? Color.White : Color.FromArgb(244, 247, 251));
             e.Graphics.FillRectangle(fill, b);
-            using var line = new Pen(active ? Color.FromArgb(37, 99, 235) : Color.FromArgb(226, 232, 240), active ? 2 : 1);
+            using var line = new Pen(Color.FromArgb(226, 232, 240), active ? 2 : 1);
             e.Graphics.DrawLine(line, b.Left + 3, b.Bottom - 1, b.Right - 3, b.Bottom - 1);
             using var tabFont = new Font("Segoe UI", 8.5f);
             TextRenderer.DrawText(e.Graphics, document.Name, tabFont, new Rectangle(b.X + 12, b.Y, b.Width - 58, b.Height), active ? Color.FromArgb(15, 23, 42) : Color.FromArgb(100, 116, 139), TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
@@ -562,7 +562,7 @@ public sealed class MainForm : Form
         try
         {
             using var image = document.Compose(); image.Save(path, System.Drawing.Imaging.ImageFormat.Png);
-            document.SavePath = path; document.Saved(); RefreshStatus(); return true;
+            document.SavePath = path; document.Saved(); RefreshStatus(); tabs.Invalidate(); return true;
         }
         catch (Exception e) { status.Text = $"저장 실패: {e.Message}"; return false; }
     }
