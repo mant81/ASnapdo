@@ -37,7 +37,7 @@ try {
     }
     if (-not $next -or -not $accept) { foreach ($element in $controls) { Write-Output ($element.Current.ControlType.ProgrammaticName + ' : ' + $element.Current.Name) }; throw 'License controls not found.' }
     if ($next.Current.IsEnabled) { throw 'Next is enabled before accepting the license.' }
-    if (-not $license.Contains('개인·기업·관공서 모두 무료') -or -not $license.Contains('AAStudio.kr')) { throw 'Installer license text does not contain the free-use notice or publisher.' }
+    if (-not $license.Contains('MIT License') -or -not $license.Contains('AAStudio.kr')) { throw 'Installer license text does not contain the MIT license or publisher.' }
     [void][LicenseWindow]::SendMessage([IntPtr]$accept.Current.NativeWindowHandle,0xF5,[IntPtr]::Zero,[IntPtr]::Zero)
     Start-Sleep -Milliseconds 200
     if (-not $next.Current.IsEnabled) { throw 'Next remains disabled after accepting the license.' }

@@ -52,12 +52,12 @@ fs.mkdirSync(output, { recursive:true });
         assert.equal(response.status(),200,`Broken link ${href}`);
       }
     }
-    const metadata = JSON.parse(fs.readFileSync(path.join(site,'release','asnapdo-1.0.2.json'),'utf8'));
-    assert.equal(metadata.version,'1.0.2');
+    const metadata = JSON.parse(fs.readFileSync(path.join(site,'release','asnapdo-1.0.3.json'),'utf8'));
+    assert.equal(metadata.version,'1.0.3');
     assert.equal(metadata.installDirectory,path.win32.join('C:/','Program Files','ASnapdo'));
     await page.goto(base + '/asnapdo/');
     const [download] = await Promise.all([page.waitForEvent('download'),page.locator('a[download]').first().click()]);
-    assert.equal(download.suggestedFilename(),'asnapdo_inst_x64_1.0.2.exe');
+    assert.equal(download.suggestedFilename(),'asnapdo_inst_x64_1.0.3.exe');
     const file = fs.readFileSync(await download.path());
     assert.equal(crypto.createHash('sha256').update(file).digest('hex'),metadata.sha256);
     assert.equal(file.length,metadata.sizeBytes);

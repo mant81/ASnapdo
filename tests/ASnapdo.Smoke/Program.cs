@@ -292,7 +292,7 @@ internal static class Program
                     string helpOutput = Path.Combine(Environment.CurrentDirectory, "docs", "screenshots");
                     var pages = help.Controls.OfType<TabControl>().Single();
                     var license = pages.TabPages[0].Controls.OfType<TextBox>().Single().Text;
-                    Check(license.Contains("개인·기업·관공서 모두 무료") && license.Contains("제작사: AAStudio.kr") && license.ReplaceLineEndings("\n") == LicenseInfo.Terms.ReplaceLineEndings("\n"), "Help displays shared free license and publisher");
+                    Check(license.Contains("MIT License") && license.Contains("Copyright (c) 2026 AAStudio.kr") && license.ReplaceLineEndings("\n") == LicenseInfo.Terms.ReplaceLineEndings("\n"), "Help displays shared MIT license and copyright");
                     foreach (TabPage page in pages.TabPages)
                     {
                         pages.SelectedTab = page; Application.DoEvents();

@@ -1,4 +1,4 @@
-#define AppVersion "1.0.2"
+#define AppVersion "1.0.3"
 #ifdef InstallSmoke
   #define InstallId "{{DC29BD00-83DA-43E5-9AEC-C7C51837AB16}"
   #define RunValueName "ASnapdo-InstallSmoke"
@@ -45,12 +45,12 @@ Name: "desktopicon"; Description: "바탕 화면 바로가기 만들기"; Flags:
 Name: "startup"; Description: "Windows 로그인 시 자동 실행 (트레이 대기)"
 
 [Messages]
-korean.WizardLicense=무료 이용약관
+korean.WizardLicense=MIT 오픈소스 라이선스
 korean.LicenseLabel=개인 · 기업 · 관공서 모두 무료로 사용할 수 있습니다.
-korean.LicenseLabel3=제작사: AAStudio.kr. 아래 무료 이용약관을 확인한 뒤 동의해 주세요.
-english.WizardLicense=Free Software License
+korean.LicenseLabel3=제작사: AAStudio.kr. 아래 MIT 라이선스를 확인한 뒤 동의해 주세요.
+english.WizardLicense=MIT Open Source License
 english.LicenseLabel=Free for individuals, businesses and public institutions.
-english.LicenseLabel3=Publisher: AAStudio.kr. Please read and accept the free software terms below.
+english.LicenseLabel3=Publisher: AAStudio.kr. Please read and accept the MIT License below.
 
 [Files]
 Source: "..\LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion

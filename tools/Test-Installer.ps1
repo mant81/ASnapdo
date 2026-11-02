@@ -12,7 +12,7 @@ try {
         if ($setup.ExitCode -ne 0) { throw "Installer returned $($setup.ExitCode)" }
         if (-not (Test-Path -LiteralPath "$destination\ASnapdo.exe") -or -not (Test-Path -LiteralPath "$destination\editor\ASnapdo.dll")) { throw 'Installed launcher/editor files are missing.' }
         $license = Get-Content -LiteralPath "$destination\LICENSE.txt" -Raw -Encoding UTF8
-        if (-not $license.Contains('개인·기업·관공서 모두 무료') -or -not $license.Contains('AAStudio.kr')) { throw 'Installed license is missing the free-use policy or publisher.' }
+        if (-not $license.Contains('MIT License') -or -not $license.Contains('AAStudio.kr')) { throw 'Installed license is missing the MIT license or publisher.' }
         if ([Diagnostics.FileVersionInfo]::GetVersionInfo("$destination\ASnapdo.exe").CompanyName -ne 'AAStudio.kr') { throw 'Launcher publisher is incorrect.' }
         if (Get-ChildItem -LiteralPath $destination -Filter '*.pdb' -Recurse) { throw 'Debug symbols were installed.' }
         $startup = (Get-ItemProperty -LiteralPath $runKey).'ASnapdo-InstallSmoke'

@@ -24,7 +24,7 @@ Windows에서 빠르게 영역/전체 화면을 캡처하고, 여러 장을 **�
 | 제품명 | ASnapdo |
 | 한글명 | 에이스냅두 |
 | 제작사 | AAStudio.kr |
-| 현재 릴리즈 버전 | 1.0.2 |
+| 현재 릴리즈 버전 | 1.0.3 |
 
 | 메인 색상 | `#2563EB` |
 | 기본 배경 | `#F8FAFC` / `#FFFFFF` |
@@ -32,15 +32,15 @@ Windows에서 빠르게 영역/전체 화면을 캡처하고, 여러 장을 **�
 | 보조 텍스트 | `#64748B` |
 | 웹 경로 | /asnapdo/ (설명), /asnapdo/changelog/ (변경이력) |
 | 실행 파일 | `ASnapdo.exe` |
-| 설치 파일 | `asnapdo_inst_x64_1.0.2.exe` |
+| 설치 파일 | `asnapdo_inst_x64_1.0.3.exe` |
 | 기본 설치 폴더 | `C:\Program Files\ASnapdo` (설치 시 관리자 권한 필요) |
-| 라이선스 | 개인·기업·관공서 모두 무료. 업무 및 영리 목적 사용 무료. 이용약관은 LICENSE.txt |
+| 라이선스 | 개인·기업·관공서 모두 무료. 업무 및 영리 목적 사용 무료. MIT 오픈소스 라이선스 원문은 LICENSE.txt |
 
 ## 2. 확정된 화면 구조
 
 ### 2.1 레이아웃
 
-- 2026-10-31 사용자 변경 지시: 메인 창 제목은 `ASnapdo v1.0.2` 형식으로 현재 빌드의 어셈블리 버전(세 자리)을 표시한다. 아래 창 제목 ASnapdo 단독 표기보다 우선한다.
+- 2026-10-31 사용자 변경 지시: 메인 창 제목은 `ASnapdo v1.0.3` 형식으로 현재 빌드의 어셈블리 버전(세 자리)을 표시한다. 아래 창 제목 ASnapdo 단독 표기보다 우선한다.
 
 - 2026-10-31 갤러리: 하단 캡처 갤러리 맨 오른쪽에 고정 × 버튼을 제공한다. 클릭하면 갤러리를 숨기고 썸네일을 해제하며 표시 설정도 꺼짐으로 저장한다. 설정 → 일반에서 다시 켤 수 있다. 썸네일 가로 스크롤과 관계없이 닫기 버튼을 표시한다.
 
@@ -263,7 +263,7 @@ src/ASnapdo/
 ### P0 — 먼저 통과해야 함
 
 - [ ] Windows 10/11에서 `dotnet build` 성공. 오류 0개.
-- [ ] `build-exe.cmd`로 `release\app\ASnapdo.exe`(네이티브 상주부) 및 `release\app\editor\`(편집기 EXE/DLL) 생성. `build-installer.ps1`로 `release\setup\asnapdo_inst_x64_1.0.2.exe` 생성.
+- [ ] `build-exe.cmd`로 `release\app\ASnapdo.exe`(네이티브 상주부) 및 `release\app\editor\`(편집기 EXE/DLL) 생성. `build-installer.ps1`로 `release\setup\asnapdo_inst_x64_1.0.3.exe` 생성.
 - [ ] EXE 더블클릭 시 정상 실행, 시작 예외 시 로그 확인 가능.
 - [ ] Print Screen 등록 충돌 시 앱 종료 없이 적절한 안내.
 - [ ] 영역 캡처 → 새 탭 → `Ctrl+C` → 외부 앱에 붙여넣기 정상.

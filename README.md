@@ -1,6 +1,6 @@
 # ASnapdo
 
-[설치 파일 다운로드](https://github.com/mant81/ASnapdo/releases/tag/v1.0.2) · [릴리즈 이력](CHANGELOG.md)
+[설치 파일 다운로드](https://github.com/mant81/ASnapdo/releases/tag/v1.0.3) · [릴리즈 이력](CHANGELOG.md)
 
 Windows 10/11용 화면 캡처 및 주석 편집기의 개발 기반입니다. .NET 10 / WinForms를 사용하며 SDK `10.0.403`을 기준으로 합니다.
 
@@ -18,7 +18,7 @@ dotnet build src/ASnapdo/ASnapdo.csproj -c Release
 powershell -NoProfile -ExecutionPolicy Bypass -File build-installer.ps1
 ```
 
-설치 파일: `release\setup\asnapdo_inst_x64_1.0.2.exe`. Visual Studio C++ Build Tools와 Inno Setup 6 컴파일러가 필요합니다. Inno Setup 경로가 다르면 `build-installer.ps1 -Compiler "ISCC.exe의 전체 경로"`로 지정합니다.
+설치 파일: `release\setup\asnapdo_inst_x64_1.0.3.exe`. Visual Studio C++ Build Tools와 Inno Setup 6 컴파일러가 필요합니다. Inno Setup 경로가 다르면 `build-installer.ps1 -Compiler "ISCC.exe의 전체 경로"`로 지정합니다.
 
 설치형은 `ASnapdo.exe`(약 20KB 네이티브 트레이 상주부)와 `editor\ASnapdo.exe` 및 DLL·.NET 런타임을 분리합니다. `release\app\ASnapdo.exe` 하나만 배포하지 말고 설치 파일을 전달하세요. PDB는 설치 대상에서 제외됩니다. 기본 설치 폴더는 C:\Program Files\ASnapdo이며 설치할 때 관리자 권한이 필요합니다. 자동 실행은 원래 설치를 시작한 사용자 권한으로 등록합니다.
 
@@ -62,7 +62,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File publish-release.ps1
 
 실제 검증 결과 및 제한은 [docs/TEST_RESULTS.md](docs/TEST_RESULTS.md)를 참고하세요. 제품 기준은 PRODUCT_SPEC.md입니다.
 
-창 X 아래 우측 상단의 아이콘이 있는 **설정 | 도움말**에서 설정과 도움말을 엽니다. 설정은 **캡처 / 단축키 / 저장 / 일반** 탭으로 나누며 하단 **변경 저장**으로 적용합니다. 설정 창이 열려 있는 동안 캡처 단축키는 실행되지 않습니다. 도움말은 라이선스 정책, 주요 기능, 현재 버전과 수동 업데이트 안내를 제공합니다. 개인·기업·관공서 모두 무료로 사용할 수 있으며 제작사는 AAStudio.kr입니다. 이용약관은 LICENSE.txt에 있고 설치 화면과 도움말에도 동일하게 표시합니다. 공식 배포 채널은 아직 미확정입니다. 제품의 한글명은 **에이스냅두**입니다.
+창 X 아래 우측 상단의 아이콘이 있는 **설정 | 도움말**에서 설정과 도움말을 엽니다. 설정은 **캡처 / 단축키 / 저장 / 일반** 탭으로 나누며 하단 **변경 저장**으로 적용합니다. 설정 창이 열려 있는 동안 캡처 단축키는 실행되지 않습니다. 도움말은 라이선스 정책, 주요 기능, 현재 버전과 수동 업데이트 안내를 제공합니다. 개인·기업·관공서 모두 무료로 사용할 수 있으며 제작사는 AAStudio.kr입니다. MIT 오픈소스 라이선스 원문은 LICENSE.txt에 있고 설치 화면과 도움말에도 동일하게 표시합니다. 공식 배포 채널은 아직 미확정입니다. 제품의 한글명은 **에이스냅두**입니다.
 # 캡처 영역을 다른 탭에 붙여넣기
 
 캡처 탭의 위쪽·왼쪽 줄자에서 이미지 기준 픽셀 좌표를 확인할 수 있습니다. 눈금은 확대·축소와 스크롤을 따라가며 저장·복사 이미지에는 포함되지 않습니다.
@@ -86,3 +86,16 @@ See [code signing and SmartScreen](docs/CODE_SIGNING.md) for signed release buil
 보안 점검 및 제한은 [docs/SECURITY_REVIEW.md](docs/SECURITY_REVIEW.md)를 참고하세요. 창 X로 보관한 세션의 원본·주석·실행 취소 이력은 현재 Windows 사용자 계정의 DPAPI로 암호화합니다. 기존 평문 세션은 검증 후 자동 변환하며 같은 계정 권한의 프로그램까지 차단하지는 못합니다. 세션 파일은 다른 계정/PC에서 복원되지 않을 수 있으므로 공유하지 마세요. 트레이 종료 시 파일을 삭제하지만 보안 삭제를 보장하지 않습니다.
 
 세션은 128MiB·128개 탭·문서별 Undo 256개와 주석 2,048개를 지원합니다. 이미지 파일은 64MiB·6,400만 픽셀·한 변 32,768픽셀까지 허용하며 PNG/JPEG/BMP 헤더를 디코딩 전에 검사합니다. 제한 초과 시 오류를 안내하고 기존 편집 상태를 유지합니다. 보안 회귀 검사는 `dotnet run --project tests/ASnapdo.Smoke -c Release -- --security-test`, 실제 암호화 세션 생명주기 검사는 `powershell -NoProfile -ExecutionPolicy Bypass -File tools/Test-SessionLifecycle.ps1`입니다. 대기 메모리는 현재 약 11MB로 기존 목표인 10MB를 초과합니다.
+
+## 오픈소스 라이선스
+
+ASnapdo의 소스 코드와 문서는 [MIT License](LICENSE.txt)로 제공합니다.
+개인·기업·공공기관에서 무료로 사용하고 수정·재배포·상업적으로 이용할 수 있습니다.
+복제본이나 소프트웨어의 상당 부분에는 저작권 표시와 MIT 라이선스 고지를 포함해야 합니다.
+제3자 구성 요소에는 각 구성 요소의 라이선스가 적용됩니다.
+기존에 배포된 설치 파일은 변경하지 않으며, 새 라이선스 원문은 이후 빌드부터 포함됩니다.
+
+## Code signing policy
+
+SignPath Foundation 무료 코드 서명 신청을 준비 중이며, 아직 승인 또는 서명 서비스를 제공받지 않았습니다.
+신청 조건과 서명 대상·검증 절차는 [코드 서명 정책](docs/CODE_SIGNING.md#signpath-foundation)을 참고하세요.

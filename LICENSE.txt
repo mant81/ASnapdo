@@ -1,24 +1,21 @@
-ASnapdo 무료 소프트웨어 이용약관
-제작사: AAStudio.kr
-시행일: 2026년 10월 31일
+﻿MIT License
 
-개인·기업·관공서 모두 무료로 사용할 수 있습니다.
-업무 및 영리 목적의 사용에도 별도의 프로그램 사용료가 없습니다.
+Copyright (c) 2026 AAStudio.kr
 
-1. 무료 사용 허용
-AAStudio.kr은 개인, 기업, 관공서, 교육기관, 비영리단체 등 모든 이용자에게 이 배포본을 설치하고 사용할 수 있는 무료 사용권을 부여합니다. 이용자 유형에 따른 사용료 구분은 없습니다.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-2. 권리 및 배포
-ASnapdo의 저작권과 관련 권리는 AAStudio.kr에 있습니다. 원본 프로그램과 이 이용약관, 권리 표시를 유지하는 경우 프로그램을 변경하지 않고 무료로 복제·배포할 수 있습니다. 무료 사용 허용이 프로그램의 권리 양도나 소스 코드 공개를 의미하지는 않습니다.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-3. 이용자의 책임
-이용자는 관련 법령과 타인의 권리를 준수하여 프로그램을 사용해야 합니다. 캡처한 이미지와 편집 결과의 사용·공유에 필요한 권한은 이용자가 확인합니다.
-
-4. 제공 상태
-프로그램은 현재 제공되는 상태로 이용할 수 있습니다. 관련 법령이 허용하는 범위에서 모든 환경의 무오류 동작이나 특정 목적에 대한 적합성을 보증하지 않습니다. 중요한 이미지와 편집 결과는 별도로 저장해 주세요. 이 조항은 이용자가 관련 법령에 따라 가지는 권리를 제한하지 않습니다.
-
-5. 제3자 구성 요소
-함께 배포되는 제3자 구성 요소에는 각 구성 요소의 라이선스가 적용됩니다. 해당 구성 요소의 권리 및 라이선스 고지는 배포 파일에 포함된 문서를 따릅니다.
-
-6. 업데이트
-이 배포본의 무료 사용 정책은 위와 같습니다. 새 버전의 기능과 제공 방식은 해당 버전의 배포 안내를 따릅니다. 프로그램을 제거하면 사용을 종료할 수 있으며, 별도로 저장한 캡처 이미지와 사용자 설정은 이용자가 관리합니다.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
